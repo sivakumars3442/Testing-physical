@@ -72,7 +72,7 @@ namespace EJ2APIServices.Controllers
         [Route("Upload")]
         public IActionResult Upload(string path, IList<IFormFile> uploadFiles, string action)
         {
-             try
+            try
             {
                 FileManagerResponse uploadResponse;
                 foreach (var file in uploadFiles)
