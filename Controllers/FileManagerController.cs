@@ -73,51 +73,31 @@ namespace EJ2APIServices.Controllers
         [Route("Upload")]
         public IActionResult Upload(string path, IList<IFormFile> uploadFiles, string action)
         {
-            try
+            FileManagerResponse uploadResponse;
+            foreach (var file in uploadFiles)
             {
-                FileManagerResponse uploadResponse;
-                foreach (var file in uploadFiles)
+                var folders = (file.FileName).Split('/');
+                // checking the folder upload
+                if (folders.Length > 1)
                 {
-                    var folders = (file.FileName).Split('/');
-                    // checking the folder upload
-                    if (folders.Length > 1)
+                    for (var i = 0; i < folders.Length - 1; i++)
                     {
-                        for (var i = 0; i < folders.Length - 1; i++)
+                        string newDirectoryPath = Path.Combine(this.basePath + path, folders[i]);
+                        if (!Directory.Exists(newDirectoryPath))
                         {
-                            string newDirectoryPath = Path.Combine(this.basePath + path, folders[i]);
-                            if (Path.GetFullPath(newDirectoryPath) != (Path.GetDirectoryName(newDirectoryPath) + Path.DirectorySeparatorChar))
-                            {
-                                throw new UnauthorizedAccessException("Access denied for Directory-traversal");
-                            }
-                            if (!Directory.Exists(newDirectoryPath))
-                            {
-                                this.operation.ToCamelCase(this.operation.Create(path, folders[i]));
-                            }
-                            path += folders[i] + "/";
+                            this.operation.ToCamelCase(this.operation.Create(path, folders[i]));
                         }
+                        path += folders[i] + "/";
                     }
                 }
-                uploadResponse = operation.Upload(path, uploadFiles, action, null);
-                if (uploadResponse.Error != null)
-                {
-                    Response.Clear();
-                    Response.ContentType = "application/json; charset=utf-8";
-                    Response.StatusCode = Convert.ToInt32(uploadResponse.Error.Code);
-                    Response.HttpContext.Features.Get<IHttpResponseFeature>().ReasonPhrase = uploadResponse.Error.Message;
-                }
             }
-            catch (Exception e)
+            uploadResponse = operation.Upload(path, uploadFiles, action, null);
+            if (uploadResponse.Error != null)
             {
-                Response.Clear();
-                Response.ContentType = "application/json; charset=utf-8";
-                ErrorDetails er = new ErrorDetails();
-                er.Message = e.Message.ToString();
-                er.Code = "417";
-                er.Message = "Access denied for Directory-traversal";
-                uploadResponse.Error = er;
-                Response.StatusCode = Convert.ToInt32(uploadResponse.Error.Code);
-                Response.HttpContext.Features.Get<IHttpResponseFeature>().ReasonPhrase = uploadResponse.Error.Message;
-                return Content("");
+               Response.Clear();
+               Response.ContentType = "application/json; charset=utf-8";
+               Response.StatusCode = Convert.ToInt32(uploadResponse.Error.Code);
+               Response.HttpContext.Features.Get<IHttpResponseFeature>().ReasonPhrase = uploadResponse.Error.Message;
             }
             return Content("");
         }
